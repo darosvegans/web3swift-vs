@@ -176,10 +176,16 @@ public class WriteTransaction: ReadTransaction {
 
                 promisesToFulfill.removeAll()
                 guard case .fulfilled(let nonce) = results[0] else {
-                    throw Web3Error.processingError(desc: "Failed to fetch nonce")
+					guard case .rejected(let error) = results[0] else {
+						throw Web3Error.processingError(desc: "Failed to fetch nonce")
+					}
+					throw Web3Error.processingError(desc: "Failed to fetch nonce", originalErrorDesc: (error as? Web3Error)?.errorDescription)
                 }
                 guard case .fulfilled(let gasEstimate) = results[1] else {
-                    throw Web3Error.processingError(desc: "Failed to fetch gas estimate")
+					guard case .rejected(let error) = results[1] else {
+						throw Web3Error.processingError(desc: "Failed to fetch gas estimate")
+					}
+					throw Web3Error.processingError(desc: "Failed to fetch gas estimate", originalErrorDesc: (error as? Web3Error)?.errorDescription)
                 }
 
                 var finalOptions = TransactionOptions()
@@ -215,10 +221,15 @@ public class WriteTransaction: ReadTransaction {
                             seal.fulfill(hookResult.3)
                         }
                     }
-                    let shouldContinue = try prom.wait()
-                    if !shouldContinue {
-                        throw Web3Error.processingError(desc: "Transaction is canceled by middleware")
-                    }
+					do {
+						let shouldContinue = try prom.wait()
+						if !shouldContinue {
+							throw Web3Error.processingError(desc: "Transaction is canceled by middleware")
+						}
+					} catch let error {
+						let errorDescription = (error as? Web3Error)?.errorDescription ?? error.localizedDescription
+						throw Web3Error.processingError(desc: "Transaction is canceled by middleware", originalErrorDesc: errorDescription)
+					}
                 }
 
                 assembledTransaction = forAssemblyPipeline.0

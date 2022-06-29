@@ -13,7 +13,7 @@ public enum Web3Error: Error {
     case walletError
     case inputError(desc: String)
     case nodeError(desc: String)
-    case processingError(desc: String)
+	case processingError(desc: String, originalErrorDesc: String? = nil)
     case keystoreError(err: AbstractKeystoreError)
     case generalError(err: Error)
     case unknownError
@@ -33,8 +33,12 @@ public enum Web3Error: Error {
             return desc
         case .nodeError(let desc):
             return desc
-        case .processingError(let desc):
-            return desc
+        case .processingError(let desc, let originalErrorDesc):
+			if let originalErrorDesc = originalErrorDesc {
+				return desc + "\n" + originalErrorDesc
+			} else {
+				return desc
+			}
         case .keystoreError(let err):
             return err.localizedDescription
         case .generalError(let err):
